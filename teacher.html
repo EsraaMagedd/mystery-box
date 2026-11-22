@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sensor Detective: Teacher page</title>
+<style>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#1d2a26;--mute:#5d6b66;--line:#d3dad4;--accent:#1f7a63;--amber:#b87a00;--bad:#b3402f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:18px 16px 48px}
+h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:6px 0}
+.lead{color:var(--mute);max-width:64ch}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+textarea{width:100%;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;min-height:40px}
+button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+summary{cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:.9rem;display:block;overflow-x:auto;margin-top:8px}
+td,th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.bad{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>Teacher page</h1>
+<p class="lead">Each team sends you a result code. Paste the codes here, one per line, then press Show results. If a team sends a newer code, paste it too and the latest one is used.</p>
+<div class="box"><textarea id="in" rows="6" placeholder="Paste result codes here, one per line"></textarea>
+<div class="row"><button class="pri" id="go">Show results</button><button id="clr">Clear</button></div><p id="err" class="bad"></p></div>
+<div id="out"></div>
+</main>
+<script>
+var N={ldr:"LDR (light sensor)",ultra:"HC-SR04 (ultrasonic distance)",pir:"PIR (motion sensor)",soil:"Soil moisture sensor",dht:"DHT11 (temperature and humidity)",lm35:"LM35 temperature sensor",mq2:"MQ-2 smoke and gas sensor",mic:"Sound sensor (analog microphone)",tilt:"Tilt switch",fsr:"Force sensor (FSR)",flex:"Flex sensor",pot:"Potentiometer",reed:"Reed switch",ttp:"Touch sensor (TTP223)",rain:"Rain drop sensor"};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function dec(t){return JSON.parse(decodeURIComponent(escape(atob(t.replace(/\s+/g,"")))))}
+function show(){
+var lines=document.getElementById("in").value.split("\n"),teams={},bad=[];
+lines.forEach(function(l,i){l=l.trim();if(!l)return;try{var o=dec(l);if(!o||typeof o.n!=="string")throw 0;teams[o.n+"|"+(o.m||"")]=o}catch(e){bad.push(i+1)}});
+document.getElementById("err").textContent=bad.length?"Could not read line "+bad.join(", ")+". Ask the team to copy the code again.":"";
+var t=Object.keys(teams).map(function(k){return teams[k]}).sort(function(a,b){return(b.s||0)-(a.s||0)});
+var h=t.length?"":'<div class="box">No results yet.</div>';
+t.forEach(function(x){var b=x.b||{},ks=Object.keys(b).sort(),sv=ks.filter(function(q){return b[q].solved}).length;
+h+='<details class="box" open><summary><b>'+esc(x.n)+'</b> '+esc(x.m||"")+' — <b>'+(+x.s||0)+' pts</b>, '+sv+'/'+ks.length+' solved in the latest round</summary><table><tr><th>Box</th><th>Real sensor</th><th>Result</th><th>Wrong guesses</th><th>Hints</th></tr>';
+ks.forEach(function(q){var r=b[q];h+='<tr><td>'+esc(q)+'</td><td>'+esc(N[r.sensor]||r.sensor||"?")+'</td><td>'+(r.solved?"Solved +"+(+r.pts||0):r.failed?"Gave up":"Not finished")+'</td><td>'+esc((r.wrong||[]).join("; ")||"–")+'</td><td>'+(+r.hints||0)+'</td></tr>'});
+h+='</table></details>'});
+document.getElementById("out").innerHTML=h}
+document.getElementById("go").addEventListener("click",show);
+document.getElementById("clr").addEventListener("click",function(){document.getElementById("in").value="";document.getElementById("err").textContent="";document.getElementById("out").innerHTML=""});
+</script>
+</body>
+</html>

@@ -50,9 +50,9 @@ details.box{margin-bottom:10px}summary{cursor:pointer}table{border-collapse:coll
 <body>
 <main>
 <header><div><h1>Sensor Detective</h1>
-<p class="lead">Five sealed boxes, each hiding one of 50 possible sensors, no labels. Poke each box with the actions, watch the numbers and the graph, and fill your evidence board. Then name the sensor. Wrong guesses and hints cost points.</p></div>
+<p class="lead">Five sealed boxes, each hiding one of 15 possible sensors, no labels. Poke each box with the actions, watch the numbers and the graph, and fill your evidence board. Then name the sensor. Wrong guesses and hints cost points.</p></div>
 <div class="score"><small id="tl"></small><br><span>Detective points</span><b id="score">0</b><button id="again">New mystery</button></div></header>
-<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div>
+<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div><div class="box setup" id="resbox" hidden style="max-width:none;margin-top:16px"><h2>Send your result to your teacher</h2><p class="lead">When you are finished, make your result code and send it to your teacher. You can make a new code at any time and it always includes your latest points.</p><div class="row"><button class="pri" id="mk">Make my result code</button><button id="cp">Copy code</button></div><textarea id="rcode" readonly hidden rows="4" style="width:100%;margin-top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></div>
 </main>
 <script>
 var A=[["cv","Cover with hand"],["fl","Shine flashlight"],["wv","Wave a hand"],["cl","Move object closer"],["aw","Move object away"],["wa","Dip in water"],["br","Breathe on it"],["wm","Warm with hands"],["lp","Hold near heat lamp"],["mg","Bring a magnet"],["tl","Tilt it"],["sk","Shake it"],["pr","Press it"],["cp","Clap loudly"],["tc","Touch with finger"],["sm","Puff of smoke"],["bd","Bend it"],["tn","Turn the knob"]];
@@ -63,55 +63,20 @@ UC="void setup(){ Serial.begin(9600); pinMode(9,OUTPUT); pinMode(10,INPUT); }\nv
 HC="#include <DHT.h>\nDHT dht(4, DHT11);\nvoid setup(){ Serial.begin(9600); dht.begin(); }\nvoid loop(){\n  Serial.print(dht.readTemperature());\n  Serial.print(\" \");\n  Serial.println(dht.readHumidity());\n  delay(2000);\n}";
 var R=[
 ["ldr","LDR (light sensor)","A",520,{cv:60,fl:960,wv:330},"Night-lights and street lamps."],
-["uv","UV sensor","A",30,{fl:360,lp:150},"Sunscreen reminders and UV index meters."],
-["flame","Flame sensor","A",990,{lp:300,wm:900},"Fire alarms and gas cookers."],
-["irobs","IR obstacle sensor","D",1,{cl:0,wv:0,cv:0},"Robots that avoid walls."],
-["irline","IR line tracker","D",0,{cv:1,cl:1},"Line-following robots."],
 ["ultra","HC-SR04 (ultrasonic distance)","U",150,{cl:25,aw:380,wv:55,cv:12},"Parking sensors and robots that measure distance.","VCC to 5V, GND to GND, Trig to D9, Echo to D10",UC],
 ["pir","PIR (motion sensor)","D",0,{wv:1,cl:1,wm:1},"Hallway lights and burglar alarms."],
 ["soil","Soil moisture sensor","A",1000,{wa:380},"Smart plant pots and irrigation."],
-["wlevel","Water level sensor","A",0,{wa:560,tc:130},"Tank and aquarium monitors."],
 ["rain","Rain drop sensor","A",1000,{wa:350,br:800,tc:900},"Car wipers and window closers."],
 ["dht","DHT11 (temperature and humidity)","2",[24,45],{br:[28,86],wm:[34,null],wa:[null,72],lp:[31,null]},"Weather stations and greenhouses.","VCC to 5V, GND to GND, Signal to D4 (DHT library)",HC],
 ["lm35","LM35 temperature sensor","F",24,{wm:33,lp:42,br:27},"Room thermometers and fridges."],
-["ntc","NTC thermistor","A",510,{wm:420,lp:300,br:470},"Kettles, 3D printers and battery packs."],
 ["mq2","MQ-2 smoke and gas sensor","A",180,{sm:700,br:240,lp:230},"Smoke and gas leak alarms."],
-["mq3","MQ-3 alcohol sensor","A",120,{br:620,sm:260},"Breathalysers."],
-["mq135","MQ-135 air quality sensor","A",200,{br:420,sm:600,wa:215},"Air purifiers and indoor air monitors."],
 ["mic","Sound sensor (analog microphone)","A",512,{cp:900,sk:560,tc:620},"Noise meters and voice-controlled gadgets."],
-["clap","Clap switch (digital sound sensor)","D",0,{cp:1},"Clap-on lights."],
-["piezo","Piezo vibration sensor","A",5,{sk:600,pr:300,cp:120,tc:200},"Electronic drum pads and knock detectors."],
-["sw420","SW-420 vibration switch","D",0,{sk:1,pr:1},"Car alarms and earthquake alerts."],
 ["tilt","Tilt switch","D",0,{tl:1,sk:1},"Pinball tilt penalties and rollover alarms."],
-["adxl","Accelerometer (analog)","A",512,{tl:700,sk:640},"Phone screen rotation and step counters."],
 ["fsr","Force sensor (FSR)","A",0,{pr:800,tc:150},"Smart insoles and pressure pads."],
 ["flex","Flex sensor","A",300,{bd:700,pr:420},"Game gloves and robot fingers."],
 ["pot","Potentiometer","A",512,{tn:900},"Volume knobs and dimmers."],
 ["ttp","Touch sensor (TTP223)","D",0,{tc:1,wa:1,pr:1},"Touch lamps and elevator buttons."],
-["btn","Push button","D",1,{pr:0,tc:0},"Doorbells and keyboards."],
-["reed","Reed switch","D",1,{mg:0,sk:0},"Door and window alarms."],
-["hall","Hall sensor (analog)","A",512,{mg:880},"Speedometers and current meters."],
-["halld","Hall sensor (digital)","D",1,{mg:0},"Brushless motors and wheel counters."],
-["compass","Magnetometer (compass)","A",400,{mg:800,tl:470,tn:600},"Phone compasses and drones."],
-["jstick","Joystick","A",512,{tn:880,pr:60},"Game controllers and drone remotes."],
-["capsoil","Capacitive soil moisture sensor","A",720,{wa:380,tc:600,br:690},"Long-lasting garden monitors."],
-["ph","pH sensor","A",520,{wa:450,tc:610},"Pools and fish tanks."],
-["turb","Turbidity sensor","A",900,{wa:420,sk:650},"Washing machines and water quality checks."],
-["pulse","Heartbeat sensor","A",500,{tc:720,wm:590},"Fitness bands and smart watches."],
-["gsr","Skin conductance sensor","A",300,{tc:640,wa:900},"Stress and lie-detector experiments."],
-["ldrd","Light switch module (digital)","D",1,{cv:0,wv:0},"Dusk-to-dawn garden lights."],
-["photo","Photo interrupter","D",0,{wv:1,cl:1,pr:1},"Printers and speed counters."],
-["capprox","Capacitive proximity sensor","D",0,{cl:1,tc:1,wa:1},"Touchless taps and liquid level switches."],
-["indprox","Inductive proximity sensor","D",1,{cl:0},"Factory machines that detect metal."],
-["baro","Barometric pressure sensor","A",600,{pr:700,br:620},"Weather stations and altitude meters."],
-["humid","Humidity sensor (analog)","A",400,{br:900,wa:700,wm:380},"Bathroom fans and museums."],
-["irtherm","Infrared thermometer","F",24,{wm:34,lp:41,cl:30,tc:33},"Contact-free fever checks."],
-["tmp36","TMP36 temperature sensor","F",24,{wm:32,lp:40,tc:31},"Thermostats and science fairs."],
-["soiltemp","Waterproof temperature probe","F",18,{wa:15,wm:24,tc:26},"Soil, pool and cooking thermometers."],
-["slm","Sound level meter","A",100,{cp:880,tc:200},"Classroom noise monitors."],
-["leak","Leak detector","D",0,{wa:1},"Under-sink and washing machine alarms."],
-["colour","Colour sensor (clear channel)","A",400,{fl:900,cv:30,wv:250,lp:700},"Sorting machines and screen calibration."],
-["dust","Dust sensor","A",100,{sm:600,br:300,sk:200},"Air purifiers and pollution maps."]
+["reed","Reed switch","D",1,{mg:0,sk:0},"Door and window alarms."]
 ];
 var TY={A:["Analog: a whole range of values.","Its readings cover a wide range of numbers."],D:["Digital: only 0 or 1.","It only ever shows two different values."],F:["Analog voltage turned into degrees with a formula. Check the datasheet for your module.","Its readings have decimals."],"2":["Two values per line, updated slowly.","Every line has two numbers and updates slowly."],U:["The numbers are echo time in microseconds. Divide by 58 for centimetres.","The numbers are big and grow when something moves away."]};
 var S={};
@@ -200,6 +165,11 @@ var c=document.getElementById("clr");if(c)c.addEventListener("click",function(){
 (async function(){try{var c=window.claude,u=c&&await c.use("user");if(u){isT=!!((await u.canEdit())||(await u.isOwner()));uid=await u.id()}dbR=c&&await c.use("db")}catch(e){}
 netEl.textContent=isT?"You are the teacher. A test round is saved on the dashboard as a [Test] team, so you can check that it works.":(dbR&&uid?"Connected: your guesses and score are shared with your teacher.":"Playing offline. Your score stays on this screen and is not sent to anyone.");
 if(isT&&dbR)dash()})();
+var rb=document.getElementById("resbox"),rt=document.getElementById("rcode");
+function enc(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
+document.getElementById("go").addEventListener("click",function(){if(started)rb.hidden=false});
+document.getElementById("mk").addEventListener("click",function(){rt.value=enc({n:teamName,m:members,s:total,r:round,b:TD});rt.hidden=false;rt.select()});
+document.getElementById("cp").addEventListener("click",function(){if(rt.hidden)document.getElementById("mk").click();rt.select();try{navigator.clipboard.writeText(rt.value)}catch(e){document.execCommand("copy")}});
 view("p");
 </script>
 </body>
