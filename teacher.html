@@ -44,18 +44,20 @@ var $=function(i){return document.getElementById(i)},op={},timer=null,url="";
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function dec(t){return JSON.parse(decodeURIComponent(escape(atob(t.replace(/\s+/g,"")))))}
 function parse(cells){var teams={},bad=0;
-cells.forEach(function(c,n){c=c.trim().replace(/^"|"$/g,"");if(!c)return;try{var o=dec(c);if(!o||typeof o.n!=="string")throw 0;teams[o.i||(o.n+"|"+(o.m||""))]=o}catch(e){bad++}});
+cells.forEach(function(c,n){c=c.trim().replace(/^"|"$/g,"");if(!c||c.toLowerCase()==="result")return;try{var o=dec(c);if(!o||typeof o.n!=="string")throw 0;if(o.submittedAt==null)return;teams[o.i||(o.n+"|"+(o.m||""))]=o}catch(e){bad++}});
 return{teams:teams,bad:bad}}
 function render(r,note){
-var t=Object.keys(r.teams).map(function(k){var x=r.teams[k];x.k=k;return x}).sort(function(a,b){return(b.s||0)-(a.s||0)});
-var h=t.length?"":'<div class="box">No teams yet. They appear after a team presses Start investigating.</div>';
+var t=Object.keys(r.teams).map(function(k){var x=r.teams[k];x.k=k;x.wrongCount=x.wrongCount==null?Object.keys(x.b||{}).reduce(function(n,q){return n+((x.b[q].wrong||[]).length)},0):(+x.wrongCount||0);return x}).sort(function(a,b){return(+b.s||0)-(+a.s||0)});
+var top=t.length?(+t[0].s||0):-1,winners=t.filter(function(x){return(+x.s||0)===top});
+var h=t.length?'<div class="box"><h2>&#127942; '+(winners.length>1?'Joint leaders: ':'Current leader: ')+winners.map(function(x){return esc(x.n)}).join(', ')+' &mdash; '+Math.max(0,top)+' pts</h2></div><div class="box"><h2>Team scoreboard</h2><table><tr><th>Rank</th><th>Team</th><th>Submitted</th><th>Wrong guesses</th><th>Score</th><th>Result</th></tr>': '<div class="box">No teams have submitted yet.</div>';
+t.forEach(function(x,i){var dt=new Date(+(x.submittedAt||x.t||0)),stamp=isNaN(dt.getTime())?'N/A':dt.toLocaleString(),winner=(+x.s||0)===top;
+h+='<tr><td>'+(i+1)+'</td><td><b>'+esc(x.n)+'</b><br><small>'+esc(x.m||'')+'</small></td><td>'+esc(stamp)+'</td><td>'+(+x.wrongCount||0)+'</td><td><b>'+(+x.s||0)+' pts</b></td><td>'+(winner?'<b>WINNER</b>':'&mdash;')+'</td></tr>'});
+if(t.length)h+='</table></div>';
 t.forEach(function(x){var b=x.b||{},ks=Object.keys(b).sort(),sv=ks.filter(function(q){return b[q].solved}).length;
-h+='<details class="box" data-k="'+esc(x.k)+'"'+(op[x.k]===false?"":" open")+'><summary><b>'+esc(x.n)+'</b> '+esc(x.m||"")+' — <b>'+(+x.s||0)+' pts</b>, '+sv+'/'+ks.length+' solved in the latest round</summary><table><tr><th>Box</th><th>Real sensor</th><th>Result</th><th>Wrong guesses</th></tr>';
-ks.forEach(function(q){var z=b[q];h+='<tr><td>'+esc(q)+'</td><td>'+esc(N[z.sensor]||z.sensor||"?")+'</td><td>'+(z.solved?"Solved +"+(+z.pts||0):z.failed?"Gave up":"Not finished")+'</td><td>'+esc((z.wrong||[]).join("; ")||"–")+'</td></tr>'});
-h+='</table></details>'});
-$("out").innerHTML=h;
-$("out").querySelectorAll("details").forEach(function(d){d.addEventListener("toggle",function(){op[d.dataset.k]=d.open})});
-$("stat").textContent=note+(r.bad?" "+r.bad+" row(s) could not be read.":"")}
+h+='<details class="box"><summary><b>'+esc(x.n)+'</b> &mdash; '+(+x.s||0)+' pts, '+(+x.wrongCount||0)+' wrong guesses, submitted '+esc(new Date(+(x.submittedAt||x.t||0)).toLocaleTimeString())+'</summary><table><tr><th>Box</th><th>Sensor</th><th>Result</th><th>Wrong guesses</th></tr>';
+ks.forEach(function(q){var z=b[q];h+='<tr><td>'+q+'</td><td>'+esc(N[z.sensor]||z.sensor||"&mdash;")+'</td><td>'+(z.solved?"Solved +"+(+z.pts||0):z.failed?"Gave up":"Working")+'</td><td>'+esc((z.wrong||[]).join("; ")||"&mdash;")+'</td></tr>'});h+='</table></details>'});
+
+$("out").innerHTML=h;$("out").querySelectorAll("details").forEach(function(d){d.addEventListener("toggle",function(){op[d.dataset.k]=d.open})});$("stat").textContent=note+(r.bad?" "+r.bad+" row(s) could not be read.":"")}
 var sheetScript=null,sheetTimeout=null;
 window.receiveSheet=function(data){clearTimeout(sheetTimeout);if(sheetScript){sheetScript.remove();sheetScript=null}if(!data||data.status!=="ok"||!data.table){$("stat").innerHTML='<span class="bad">Could not read this Sheet. Check that its link is shared with viewers.</span>';return}
 var cols=data.table.cols||[],col=cols.findIndex(function(c){return String(c.label||"").toLowerCase()==="result"});if(col<0)col=1;

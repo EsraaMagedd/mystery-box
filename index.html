@@ -52,7 +52,7 @@ details.box{margin-bottom:10px}summary{cursor:pointer}table{border-collapse:coll
 <header><div><h1>Sensor Detective</h1>
 <p class="lead">Five sealed boxes, each hiding one of 15 possible sensors, no labels. Poke each box with the actions, watch the numbers and the graph, and fill your evidence board. Then name the sensor. Wrong guesses cost points.</p></div>
 <div class="score"><small id="tl"></small><br><span>Detective points</span><b id="score">0</b><button id="again">New mystery</button></div></header>
-<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div><div class="box setup" id="resbox" hidden style="max-width:none;margin-top:16px"><h2>Your result</h2><p class="lead">Your points and guesses are sent to your teacher automatically after each guess. If the internet stops working, make a result code below and give it to your teacher.</p><p class="lead" id="st">Sending starts when you press Start investigating.</p><div class="row"><button class="pri" id="mk">Make my result code</button><button id="cp">Copy code</button></div><textarea id="rcode" readonly hidden rows="4" style="width:100%;margin-top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></div>
+<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div><div class="box setup" id="resbox" hidden style="max-width:none;margin-top:16px"><h2>Finish and submit</h2><p class="lead">When your group is done investigating, submit your final score. The submission time will appear on the teacher dashboard.</p><div class="row"><button class="pri" id="submitBtn">Submit final score</button><button id="mk">Make result code</button><button id="cp">Copy code</button></div><p class="msg" id="st">Your result has not been submitted.</p><textarea id="rcode" readonly hidden rows="4" style="width:100%;margin-top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></div>
 </main>
 <script>
 var A=[["cv","Cover with hand"],["fl","Shine flashlight"],["wv","Wave a hand"],["cl","Move object closer"],["aw","Move object away"],["wa","Dip in water"],["br","Breathe on it"],["wm","Warm with hands"],["lp","Hold near heat lamp"],["mg","Bring a magnet"],["tl","Tilt it"],["sk","Shake it"],["pr","Press it"],["cp","Clap loudly"],["tc","Touch with finger"],["sm","Puff of smoke"],["bd","Bend it"],["tn","Turn the knob"]];
@@ -91,7 +91,7 @@ if(t=="F"){x=c.x+Math.random()*.4-.2;return[x,x.toFixed(1)]}
 if(t=="U"){x=Math.round(c.x*58+Math.random()*40-20);return[x,""+x]}
 if(t=="2")return[Math.round(c.x),Math.round(c.x)+" "+Math.round(c.y)];
 x=Math.max(0,Math.round(c.x+Math.random()*10-5));return[x,""+x]}}});
-var grid=document.getElementById("grid"),scEl=document.getElementById("score"),timers=[],total=0,round=0,TD={};
+var grid=document.getElementById("grid"),scEl=document.getElementById("score"),timers=[],total=0,round=0,TD={},totalWrong=0;
 function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
 function build(){
@@ -129,17 +129,17 @@ $(".rv").innerHTML='<div class="reveal">This is the <b>'+s.name+'</b>.<br><b>Wir
 $(".tag").textContent=pts+" pts"}
 $(".gu").addEventListener("click",function(){if(done)return;var g=$("select").value;if(!g){msg.innerHTML='<span class="bad">Pick a sensor first.</span>';return}
 if(g===k){var p=Math.max(5,30-10*wr);total+=p;scEl.textContent=total;TD[L].solved=true;TD[L].pts=p;sync();msg.innerHTML='<span class="ok">Correct! +'+p+' points.</span>';reveal(p)}
-else{wr++;TD[L].wrong.push(S[g].name);if(wr>=3)TD[L].failed=true;sync();if(wr>=3){msg.innerHTML='<span class="bad">Three wrong guesses. Here is the answer, 0 points.</span>';reveal(0)}
+else{wr++;totalWrong++;TD[L].wrong.push(S[g].name);if(wr>=3)TD[L].failed=true;sync();if(wr>=3){msg.innerHTML='<span class="bad">Three wrong guesses. Here is the answer, 0 points.</span>';reveal(0)}
 else msg.innerHTML='<span class="bad">Not it. '+(3-wr)+' guess'+(wr===2?"":"es")+' left. Check your evidence.</span>'}})}
 document.getElementById("again").addEventListener("click",build);
 var isT=false,uid=null,dbR=null,teamRef=null,started=false,teamName="",members="";
 var setupEl=document.getElementById("setup"),dashEl=document.getElementById("dash"),tabsEl=document.getElementById("tabs");
 setupEl.innerHTML='<div class="box setup"><h2>Join the investigation</h2><p class="lead" id="net"></p><label>Team name<input id="tn" maxlength="30"></label><label>Team members<input id="tm" maxlength="80" placeholder="Names, separated by commas"></label><button class="pri" id="go">Start investigating</button></div>';
 var netEl=document.getElementById("net");
-function sync(){if(!started)return;send();if(!teamRef&&dbR&&uid)teamRef=dbR.collection("teams").doc(uid);if(!teamRef)return;
+function sync(){if(!started)return;if(!teamRef&&dbR&&uid)teamRef=dbR.collection("teams").doc(uid);if(!teamRef)return;
 try{teamRef.set({name:teamName,members:members,score:total,round:round,boxes:TD,updated:Date.now()}).then(null,function(){netEl.textContent="Could not share your scores. Tell your teacher."})}catch(e){}}
 document.getElementById("go").addEventListener("click",function(){var n=document.getElementById("tn").value.trim();if(!n){document.getElementById("tn").focus();return}
-teamName=(isT?"[Test] ":"")+n;members=document.getElementById("tm").value.trim();started=true;total=0;round=0;document.getElementById("tl").textContent=(isT?"Test: ":"Team ")+n;
+teamName=(isT?"[Test] ":"")+n;members=document.getElementById("tm").value.trim();started=true;total=0;round=0;totalWrong=0;document.getElementById("tl").textContent=(isT?"Test: ":"Team ")+n;
 view("p");build();sync()});
 function view(v){dashEl.hidden=v!=="d";setupEl.hidden=!(v==="p"&&!started);grid.hidden=!(v==="p"&&started);
 tabsEl.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.dataset.v===v)})}
@@ -160,15 +160,17 @@ dashEl.querySelectorAll("[data-id]").forEach(function(b){b.addEventListener("cli
 var c=document.getElementById("clr");if(c)c.addEventListener("click",function(){if(confirm("Remove all teams?"))t.forEach(function(x){dbR.doc("teams/"+x.id).delete()})})
 },function(){dashEl.textContent="Could not load teams."})}
 (async function(){try{var c=window.claude,u=c&&await c.use("user");if(u){isT=!!((await u.canEdit())||(await u.isOwner()));uid=await u.id()}dbR=c&&await c.use("db")}catch(e){}
-netEl.textContent=isT?"You are the teacher. A test round is saved on the dashboard as a [Test] team, so you can check that it works.":(dbR&&uid?"Connected: your guesses and score are shared with your teacher.":"Playing offline. Your score stays on this screen and is not sent to anyone.");
+netEl.textContent=isT?"You are the teacher. A test round is saved on the dashboard as a [Test] team, so you can check that it works.":(dbR&&uid?"Connected. Submit your final score when your group is finished.":"Playing offline. Submit can be retried when the internet is available.");
 if(isT&&dbR)dash()})();
-var FORM="https://docs.google.com/forms/d/e/1FAIpQLSd7flk9dbfjnUNjjnjWI7JADqkSc6CYWt6BgmGeGka3S2cGXQ/formResponse",tid=Math.random().toString(36).slice(2,8),stT=null;
-function send(){clearTimeout(stT);stT=setTimeout(function(){try{var d=new URLSearchParams();d.append("entry.940517399",enc({i:tid,n:teamName,m:members,s:total,r:round,b:TD,t:Date.now()}));
-fetch(FORM,{method:"POST",mode:"no-cors",body:d}).then(function(){document.getElementById("st").textContent="Sent to your teacher at "+new Date().toLocaleTimeString()+"."},function(){document.getElementById("st").textContent="Could not send. Check the internet, then press any button again."})}catch(e){}},400)}
+var FORM="https://docs.google.com/forms/d/e/1FAIpQLSd7flk9dbfjnUNjjnjWI7JADqkSc6CYWt6BgmGeGka3S2cGXQ/formResponse",tid=Math.random().toString(36).slice(2,8);
+function wrongCount(){return totalWrong}
+function submitFinal(){if(!started)return;var submittedAt=Date.now(),payload={i:tid,n:teamName,m:members,s:total,r:round,b:TD,t:submittedAt,submittedAt:submittedAt,wrongCount:wrongCount()};var status=document.getElementById("st"),button=document.getElementById("submitBtn");button.disabled=true;status.textContent="Submitting team results...";
+try{var d=new URLSearchParams();d.append("entry.940517399",enc(payload));fetch(FORM,{method:"POST",mode:"no-cors",body:d}).then(function(){status.textContent="Submitted at "+new Date(submittedAt).toLocaleTimeString()+". Your teacher can see your score.";button.disabled=false;button.textContent="Submit updated score"},function(){status.textContent="Could not submit. Check the internet, then try again or give your teacher the result code.";button.disabled=false})}catch(e){status.textContent="Could not submit. Check the internet, then try again or give your teacher the result code.";button.disabled=false}}
 var rb=document.getElementById("resbox"),rt=document.getElementById("rcode");
 function enc(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
-document.getElementById("go").addEventListener("click",function(){if(started)rb.hidden=false});
-document.getElementById("mk").addEventListener("click",function(){rt.value=enc({n:teamName,m:members,s:total,r:round,b:TD});rt.hidden=false;rt.select()});
+document.getElementById("go").addEventListener("click",function(){if(started){rb.hidden=false;document.getElementById("st").textContent="Your result has not been submitted."}});
+document.getElementById("submitBtn").addEventListener("click",submitFinal);
+document.getElementById("mk").addEventListener("click",function(){rt.value=enc({i:tid,n:teamName,m:members,s:total,r:round,b:TD,t:Date.now(),wrongCount:wrongCount(),submittedAt:Date.now()});rt.hidden=false;rt.select()});
 document.getElementById("cp").addEventListener("click",function(){if(rt.hidden)document.getElementById("mk").click();rt.select();try{navigator.clipboard.writeText(rt.value)}catch(e){document.execCommand("copy")}});
 view("p");
 </script>
