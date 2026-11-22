@@ -52,7 +52,7 @@ details.box{margin-bottom:10px}summary{cursor:pointer}table{border-collapse:coll
 <header><div><h1>Sensor Detective</h1>
 <p class="lead">Five sealed boxes, each hiding one of 15 possible sensors, no labels. Poke each box with the actions, watch the numbers and the graph, and fill your evidence board. Then name the sensor. Wrong guesses and hints cost points.</p></div>
 <div class="score"><small id="tl"></small><br><span>Detective points</span><b id="score">0</b><button id="again">New mystery</button></div></header>
-<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div><div class="box setup" id="resbox" hidden style="max-width:none;margin-top:16px"><h2>Send your result to your teacher</h2><p class="lead">When you are finished, make your result code and send it to your teacher. You can make a new code at any time and it always includes your latest points.</p><div class="row"><button class="pri" id="mk">Make my result code</button><button id="cp">Copy code</button></div><textarea id="rcode" readonly hidden rows="4" style="width:100%;margin-top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></div>
+<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div><div class="box setup" id="resbox" hidden style="max-width:none;margin-top:16px"><h2>Your result</h2><p class="lead">Your points and guesses are sent to your teacher automatically after every guess or hint. If the internet stops working, make a result code below and give it to your teacher.</p><p class="lead" id="st">Sending starts when you press Start investigating.</p><div class="row"><button class="pri" id="mk">Make my result code</button><button id="cp">Copy code</button></div><textarea id="rcode" readonly hidden rows="4" style="width:100%;margin-top:10px;font:12px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea></div>
 </main>
 <script>
 var A=[["cv","Cover with hand"],["fl","Shine flashlight"],["wv","Wave a hand"],["cl","Move object closer"],["aw","Move object away"],["wa","Dip in water"],["br","Breathe on it"],["wm","Warm with hands"],["lp","Hold near heat lamp"],["mg","Bring a magnet"],["tl","Tilt it"],["sk","Shake it"],["pr","Press it"],["cp","Clap loudly"],["tc","Touch with finger"],["sm","Puff of smoke"],["bd","Bend it"],["tn","Turn the knob"]];
@@ -139,7 +139,7 @@ var isT=false,uid=null,dbR=null,teamRef=null,started=false,teamName="",members="
 var setupEl=document.getElementById("setup"),dashEl=document.getElementById("dash"),tabsEl=document.getElementById("tabs");
 setupEl.innerHTML='<div class="box setup"><h2>Join the investigation</h2><p class="lead" id="net"></p><label>Team name<input id="tn" maxlength="30"></label><label>Team members<input id="tm" maxlength="80" placeholder="Names, separated by commas"></label><button class="pri" id="go">Start investigating</button></div>';
 var netEl=document.getElementById("net");
-function sync(){if(!started)return;if(!teamRef&&dbR&&uid)teamRef=dbR.collection("teams").doc(uid);if(!teamRef)return;
+function sync(){if(!started)return;send();if(!teamRef&&dbR&&uid)teamRef=dbR.collection("teams").doc(uid);if(!teamRef)return;
 try{teamRef.set({name:teamName,members:members,score:total,round:round,boxes:TD,updated:Date.now()}).then(null,function(){netEl.textContent="Could not share your scores. Tell your teacher."})}catch(e){}}
 document.getElementById("go").addEventListener("click",function(){var n=document.getElementById("tn").value.trim();if(!n){document.getElementById("tn").focus();return}
 teamName=(isT?"[Test] ":"")+n;members=document.getElementById("tm").value.trim();started=true;total=0;round=0;document.getElementById("tl").textContent=(isT?"Test: ":"Team ")+n;
@@ -165,6 +165,9 @@ var c=document.getElementById("clr");if(c)c.addEventListener("click",function(){
 (async function(){try{var c=window.claude,u=c&&await c.use("user");if(u){isT=!!((await u.canEdit())||(await u.isOwner()));uid=await u.id()}dbR=c&&await c.use("db")}catch(e){}
 netEl.textContent=isT?"You are the teacher. A test round is saved on the dashboard as a [Test] team, so you can check that it works.":(dbR&&uid?"Connected: your guesses and score are shared with your teacher.":"Playing offline. Your score stays on this screen and is not sent to anyone.");
 if(isT&&dbR)dash()})();
+var FORM="https://docs.google.com/forms/d/e/1FAIpQLSd7flk9dbfjnUNjjnjWI7JADqkSc6CYWt6BgmGeGka3S2cGXQ/formResponse",tid=Math.random().toString(36).slice(2,8),stT=null;
+function send(){clearTimeout(stT);stT=setTimeout(function(){try{var d=new URLSearchParams();d.append("entry.940517399",enc({i:tid,n:teamName,m:members,s:total,r:round,b:TD,t:Date.now()}));
+fetch(FORM,{method:"POST",mode:"no-cors",body:d}).then(function(){document.getElementById("st").textContent="Sent to your teacher at "+new Date().toLocaleTimeString()+"."},function(){document.getElementById("st").textContent="Could not send. Check the internet, then press any button again."})}catch(e){}},400)}
 var rb=document.getElementById("resbox"),rt=document.getElementById("rcode");
 function enc(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
 document.getElementById("go").addEventListener("click",function(){if(started)rb.hidden=false});
