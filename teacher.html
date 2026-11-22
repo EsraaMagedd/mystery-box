@@ -1,26 +1,73 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sensor Detectives | Instructor Dashboard</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sensor Detective: Teacher page</title>
 <style>
-:root{--bg:#0b1220;--panel:#121e32;--line:#2b3c57;--ink:#edf4ff;--muted:#a9bad2;--cyan:#53d7e8;--gold:#ffc96b;--green:#65d6a2}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#183353,transparent 35%),var(--bg);color:var(--ink);font:15px/1.5 system-ui,Arial,sans-serif}.wrap{max-width:1200px;margin:auto;padding:24px 18px 60px}.brand{color:var(--cyan);font-weight:900;letter-spacing:.05em}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1{font-size:clamp(2rem,4vw,3rem);margin:22px 0 6px}.muted{color:var(--muted)}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin:16px 0}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.stat{background:#0b1728;border:1px solid var(--line);border-radius:14px;padding:15px}.stat strong{font-size:1.8rem;display:block;color:var(--gold)}button{border:0;border-radius:10px;background:var(--cyan);color:#071521;font-weight:800;padding:10px 15px;cursor:pointer}input{background:#0b1526;border:1px solid var(--line);border-radius:10px;padding:11px;color:var(--ink);min-width:min(100%,420px);width:100%;margin:6px 0}label{font-weight:700}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--cyan)}.scroll{overflow:auto}.team{cursor:pointer}.team:hover{background:#1b2d46}.detail{white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1728;padding:12px;border-radius:10px;margin:8px 0}.badge{display:inline-block;background:#173c38;color:#9bf0c8;padding:3px 8px;border-radius:99px}.error{color:#ffd2a6;background:#442b20;padding:12px;border-radius:10px}.ok{color:#aaf1ce}.hidden{display:none}footer{color:var(--muted);text-align:center;margin-top:30px}
-</style></head><body><main class="wrap">
-<div class="head"><div class="brand">◈ SENSOR DETECTIVES · INSTRUCTOR</div><button id="refresh">Refresh submissions ↻</button></div>
-<h1>Classroom dashboard</h1><p class="muted">Review team investigations, engineering solutions, and submitted scores.</p>
-<section class="card"><label for="csvUrl">Published Google Sheets CSV URL</label><input id="csvUrl" placeholder="Paste the published CSV link here"><button id="load">Load submissions</button><p class="muted">Publish the response worksheet as CSV (File → Share → Publish to web → select the response tab → CSV). The sheet must be publicly published for this dashboard to read it.</p><div id="status" class="muted"></div></section>
-<section class="stats"><div class="stat"><span class="muted">Teams submitted</span><strong id="total">—</strong></div><div class="stat"><span class="muted">Average points</span><strong id="average">—</strong></div><div class="stat"><span class="muted">Highest score</span><strong id="highest">—</strong></div></section>
-<section class="card"><h2>Team submissions</h2><div class="scroll"><table><thead><tr><th>Team</th><th>Section</th><th>Leader</th><th>Completion</th><th>Score</th><th>Submitted</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="muted">Load the published response sheet to view submissions.</td></tr></tbody></table></div></section>
-<section class="card hidden" id="detailCard"><h2 id="detailTitle">Submission details</h2><div id="detail"></div></section>
-<footer>Sensor Detectives · Instructor view</footer></main>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#1d2a26;--mute:#5d6b66;--line:#d3dad4;--accent:#1f7a63;--amber:#b87a00;--bad:#b3402f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:18px 16px 48px}
+h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:6px 0}
+.lead{color:var(--mute);max-width:64ch}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+input,textarea{width:100%;font:13px ui-monospace,Menlo,Consolas,monospace;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;min-height:40px}
+button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+summary{cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:.9rem;display:block;overflow-x:auto;margin-top:8px}
+td,th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.bad{color:var(--bad)}.mute{color:var(--mute);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<h1>Teacher page</h1>
+<p class="lead">Scores are sent through the Google Form and saved in its linked Sheet. This page reads the shared Sheet and refreshes every 15 seconds.</p>
+<div class="box"><label for="u" class="mute">Google Sheet link</label>
+<input id="u" value="https://docs.google.com/spreadsheets/d/1DP2AWRSeM8XnG-FMwu-p59xRa154xUJwQ5a0JctHWW0/edit?usp=sharing" aria-label="Google Sheet link">
+<div class="row"><button class="pri" id="con">Connect</button><button id="dis">Disconnect</button></div>
+<p class="mute" id="stat"></p></div>
+<details class="box"><summary>No Sheet link? Paste result codes by hand</summary>
+<textarea id="in" rows="5" placeholder="One result code per line"></textarea><div class="row"><button id="man">Show results</button></div></details>
+<div id="out"></div>
+</main>
 <script>
-const SHEET_ID="1DP2AWRSeM8XnG-FMwu-p59xRa154xUJwQ5a0JctHWW0";
-const DEFAULT_CSV_URL=""; // Paste your Google Sheets "Publish to web" CSV URL here.
-let records=[];
-const $=id=>document.getElementById(id);
-function parseCSV(text){let rows=[],row=[],cell="",q=false;for(let i=0;i<text.length;i++){let c=text[i],n=text[i+1];if(c==='"'&&q&&n==='"'){cell+='"';i++}else if(c==='"'){q=!q}else if(c===','&&!q){row.push(cell);cell=""}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&n==='\n')i++;row.push(cell);if(row.some(x=>x.trim()))rows.push(row);row=[];cell=""}else cell+=c}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}
-function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function parseSubmission(raw){try{return JSON.parse(raw)}catch(e){return null}}
-async function load(){let url=$("csvUrl").value.trim();if(!url){$("status").innerHTML='<span class="error">Paste the published CSV link first.</span>';return}$("status").textContent="Loading response sheet...";try{let res=await fetch(url);if(!res.ok)throw new Error("HTTP "+res.status);let rows=parseCSV(await res.text());if(rows.length<2)throw new Error("No response rows found. Check that the response worksheet is published.");let headers=rows[0].map(x=>x.trim().toLowerCase());let resultIndex=headers.findIndex(h=>h==="result"||h.includes("result"));if(resultIndex<0)resultIndex=rows[0].length-1;records=rows.slice(1).map((r,i)=>{let payload=parseSubmission(r[resultIndex]||"");return payload?{payload,row:r,index:i}:null}).filter(Boolean);render();$("status").innerHTML=`<span class="ok">Loaded ${records.length} valid Sensor Detectives submission(s).</span>`;localStorage.setItem("sensorDetectivesCsv",url)}catch(e){$("status").innerHTML=`<span class="error">Could not load the sheet: ${escapeHtml(e.message)}. Confirm that the sheet is published as CSV and that the URL is the published CSV URL (not the edit URL).</span>`}}
-function render(){let scores=records.map(x=>Number(x.payload.totalScore||0));$("total").textContent=records.length;$("average").textContent=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):"0";$("highest").textContent=scores.length?Math.max(...scores):"0";$("rows").innerHTML=records.length?records.map((x,i)=>{let p=x.payload,t=p.team||{};return `<tr class="team" data-index="${i}"><td><b>${escapeHtml(t.team||"Unnamed team")}</b></td><td>${escapeHtml(t.section||"")}</td><td>${escapeHtml(t.leader||"")}</td><td>${escapeHtml(p.completion||"")}</td><td><b>${Number(p.totalScore||0)}</b></td><td>${escapeHtml(p.submittedAt?new Date(p.submittedAt).toLocaleString():"")}</td></tr>`}).join(""):'<tr><td colspan="6" class="muted">No valid team submissions found.</td></tr>';document.querySelectorAll("[data-index]").forEach(el=>el.onclick=()=>showDetail(+el.dataset.index))}
-function showDetail(i){let p=records[i].payload,t=p.team||{},e=p.engineering||{};$("detailTitle").textContent=`${t.team||"Team"} · Submission details`;let inv=(p.investigations||[]).map(x=>`<div class="detail"><b>Box ${x.box}: ${escapeHtml(x.title)}</b>\nGuess: ${escapeHtml(x.guess||"Not investigated")}\nCorrect: ${x.correct===true?"Yes":x.correct===false?"No":"—"}\nPoints: ${escapeHtml(x.points??0)}\nReasoning: ${escapeHtml(x.reason||"—")}\nExplanation: ${escapeHtml(x.explanation||"—")}</div>`).join("");$("detail").innerHTML=`<p><span class="badge">Score: ${Number(p.totalScore||0)} points</span></p><p><b>Section:</b> ${escapeHtml(t.section||"")}<br><b>Leader:</b> ${escapeHtml(t.leader||"")}<br><b>Members:</b><br>${escapeHtml(t.members||"").replace(/\n/g,"<br>")}</p><h3>Mystery investigations</h3>${inv}<h3>Engineering mission</h3><div class="detail"><b>Scenario:</b> ${escapeHtml(e.mission||"")}\n<b>Sensor(s):</b> ${escapeHtml(e.sensors||"")}\n<b>System explanation:</b>\n${escapeHtml(e.systemExplanation||"")}\n<b>Additional components:</b>\n${escapeHtml(e.additionalComponents||"")}\n<b>Diagram / circuit:</b>\n${escapeHtml(e.diagram||"")}\n<b>Team reflection:</b>\n${escapeHtml(e.reflection||"")}</div>`;$("detailCard").classList.remove("hidden");$("detailCard").scrollIntoView({behavior:"smooth"})}
-$("load").onclick=load;$("refresh").onclick=load;let saved=localStorage.getItem("sensorDetectivesCsv");if(saved)$("csvUrl").value=saved;else if(DEFAULT_CSV_URL)$("csvUrl").value=DEFAULT_CSV_URL;
-</script></body></html>
+var N={ldr:"LDR (light sensor)",ultra:"HC-SR04 (ultrasonic distance)",pir:"PIR (motion sensor)",soil:"Soil moisture sensor",dht:"DHT11 (temperature and humidity)",lm35:"LM35 temperature sensor",mq2:"MQ-2 smoke and gas sensor",mic:"Sound sensor (analog microphone)",tilt:"Tilt switch",fsr:"Force sensor (FSR)",flex:"Flex sensor",pot:"Potentiometer",reed:"Reed switch",ttp:"Touch sensor (TTP223)",rain:"Rain drop sensor"};
+var $=function(i){return document.getElementById(i)},op={},timer=null,url="";
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function dec(t){return JSON.parse(decodeURIComponent(escape(atob(t.replace(/\s+/g,"")))))}
+function parse(cells){var teams={},bad=0;
+cells.forEach(function(c,n){c=c.trim().replace(/^"|"$/g,"");if(!c)return;try{var o=dec(c);if(!o||typeof o.n!=="string")throw 0;teams[o.i||(o.n+"|"+(o.m||""))]=o}catch(e){bad++}});
+return{teams:teams,bad:bad}}
+function render(r,note){
+var t=Object.keys(r.teams).map(function(k){var x=r.teams[k];x.k=k;return x}).sort(function(a,b){return(b.s||0)-(a.s||0)});
+var h=t.length?"":'<div class="box">No teams yet. They appear after a team presses Start investigating.</div>';
+t.forEach(function(x){var b=x.b||{},ks=Object.keys(b).sort(),sv=ks.filter(function(q){return b[q].solved}).length;
+h+='<details class="box" data-k="'+esc(x.k)+'"'+(op[x.k]===false?"":" open")+'><summary><b>'+esc(x.n)+'</b> '+esc(x.m||"")+' — <b>'+(+x.s||0)+' pts</b>, '+sv+'/'+ks.length+' solved in the latest round</summary><table><tr><th>Box</th><th>Real sensor</th><th>Result</th><th>Wrong guesses</th></tr>';
+ks.forEach(function(q){var z=b[q];h+='<tr><td>'+esc(q)+'</td><td>'+esc(N[z.sensor]||z.sensor||"?")+'</td><td>'+(z.solved?"Solved +"+(+z.pts||0):z.failed?"Gave up":"Not finished")+'</td><td>'+esc((z.wrong||[]).join("; ")||"–")+'</td></tr>'});
+h+='</table></details>'});
+$("out").innerHTML=h;
+$("out").querySelectorAll("details").forEach(function(d){d.addEventListener("toggle",function(){op[d.dataset.k]=d.open})});
+$("stat").textContent=note+(r.bad?" "+r.bad+" row(s) could not be read.":"")}
+var sheetScript=null,sheetTimeout=null;
+window.receiveSheet=function(data){clearTimeout(sheetTimeout);if(sheetScript){sheetScript.remove();sheetScript=null}if(!data||data.status!=="ok"||!data.table){$("stat").innerHTML='<span class="bad">Could not read this Sheet. Check that its link is shared with viewers.</span>';return}
+var cols=data.table.cols||[],col=cols.findIndex(function(c){return String(c.label||"").toLowerCase()==="result"});if(col<0)col=1;
+var cells=(data.table.rows||[]).map(function(row){var c=row.c&&row.c[col];return c&&c.v!=null?String(c.v):""});
+render(parse(cells),"Connected. Updated at "+new Date().toLocaleTimeString()+".")};
+function load(){if(!url)return;var m=url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);if(!m){$("stat").innerHTML='<span class="bad">Paste a Google Sheets link.</span>';return}
+if(sheetScript)sheetScript.remove();clearTimeout(sheetTimeout);sheetScript=document.createElement("script");sheetScript.src="https://docs.google.com/spreadsheets/d/"+m[1]+"/gviz/tq?tqx=out:json;responseHandler:receiveSheet&t="+Date.now();sheetScript.onerror=function(){clearTimeout(sheetTimeout);$("stat").innerHTML='<span class="bad">Could not load the Sheet. Check that its link is shared with viewers.</span>';sheetScript.remove();sheetScript=null};document.head.appendChild(sheetScript);sheetTimeout=setTimeout(function(){if(sheetScript){sheetScript.remove();sheetScript=null;$("stat").innerHTML='<span class="bad">The Sheet did not respond. Check its sharing settings and try again.</span>'}},12000)}
+function connect(){url=$("u").value.trim();if(!url)return;try{localStorage.setItem("sdurl",url)}catch(e){}clearInterval(timer);load();timer=setInterval(load,15000)}
+$("con").addEventListener("click",connect);
+$("dis").addEventListener("click",function(){clearInterval(timer);url="";$("u").value="";if(sheetScript){sheetScript.remove();sheetScript=null}clearTimeout(sheetTimeout);try{localStorage.removeItem("sdurl")}catch(e){}$("stat").textContent="Disconnected.";$("out").innerHTML=""});
+$("man").addEventListener("click",function(){render(parse($("in").value.split("\n")),"Showing pasted codes.")});
+try{var sv=localStorage.getItem("sdurl");if(sv){$("u").value=sv}connect()}catch(e){connect()}
+</script>
+</body>
+</html>
