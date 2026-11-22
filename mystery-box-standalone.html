@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sensor Detective</title>
+<style>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#1d2a26;--mute:#5d6b66;--line:#d3dad4;--accent:#1f7a63;--amber:#b87a00;--bad:#b3402f;--mon:#10201b;--monink:#8df0c6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78;--mon:#0a100d}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1a2420;--ink:#e6efe9;--mute:#9db0a7;--line:#2e3d37;--accent:#4cc9a1;--amber:#e8b84a;--bad:#ef8a78;--mon:#0a100d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:18px 16px 48px}
+header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:6px 0}
+.lead{color:var(--mute);max-width:64ch;margin:0 0 16px}
+.score{background:var(--card);border:2px solid var(--amber);border-radius:10px;padding:8px 14px;text-align:center;min-width:130px}
+.score b{display:block;font:700 1.8rem Georgia,serif;color:var(--amber)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.box.won{border-color:var(--accent)}
+.box h2{margin:0 0 6px;font:700 1.25rem Georgia,serif;display:flex;justify-content:space-between}
+.tag{font:600 .85rem system-ui;color:var(--accent)}
+.lab{font-size:.85rem;color:var(--mute);margin:8px 0 4px}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+button,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;min-height:40px}
+button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:focus-visible,select:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.tools button{font-size:.9rem;padding:6px 10px;min-height:36px}
+.tools button.n0{border-style:dashed}
+.tools button.n1{opacity:.6}
+.tools button.n2{border-color:var(--accent);color:var(--accent);font-weight:700}
+pre.mon{background:var(--mon);color:#8df0c6;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;border-radius:8px;padding:8px 10px;height:110px;overflow:auto;margin:0}
+canvas{width:100%;height:64px;background:var(--mon);border-radius:8px;display:block;margin-top:6px}
+.rec{display:flex;gap:14px;font-size:.9rem;color:var(--mute);flex-wrap:wrap;margin-top:6px}
+.rec b{color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.msg{margin-top:8px;font-size:.92rem;min-height:1.4em}
+.bad{color:var(--bad)}.ok{color:var(--accent);font-weight:700}
+.reveal{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;font-size:.92rem}
+.reveal pre{background:var(--mon);color:#8df0c6;padding:10px;border-radius:8px;overflow-x:auto;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
+.setup{max-width:520px}.setup label{display:grid;gap:4px;margin:10px 0;font-size:.9rem;color:var(--mute)}.setup input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+#tabs{display:flex;gap:8px;margin-bottom:12px}#tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+details.box{margin-bottom:10px}summary{cursor:pointer}table{border-collapse:collapse;width:100%;font-size:.9rem;display:block;overflow-x:auto;margin-top:8px}td,th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+#tl{font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Sensor Detective</h1>
+<p class="lead">Five sealed boxes, each hiding one of 50 possible sensors, no labels. Poke each box with the actions, watch the numbers and the graph, and fill your evidence board. Then name the sensor. Wrong guesses and hints cost points.</p></div>
+<div class="score"><small id="tl"></small><br><span>Detective points</span><b id="score">0</b><button id="again">New mystery</button></div></header>
+<div id="tabs"></div><div id="setup"></div><div id="dash" hidden></div><div class="grid" id="grid" hidden></div>
+</main>
+<script>
+var A=[["cv","Cover with hand"],["fl","Shine flashlight"],["wv","Wave a hand"],["cl","Move object closer"],["aw","Move object away"],["wa","Dip in water"],["br","Breathe on it"],["wm","Warm with hands"],["lp","Hold near heat lamp"],["mg","Bring a magnet"],["tl","Tilt it"],["sk","Shake it"],["pr","Press it"],["cp","Clap loudly"],["tc","Touch with finger"],["sm","Puff of smoke"],["bd","Bend it"],["tn","Turn the knob"]];
+var AC="void setup(){ Serial.begin(9600); }\nvoid loop(){\n  Serial.println(analogRead(A0));\n  delay(300);\n}",
+DC="void setup(){ Serial.begin(9600); pinMode(2,INPUT); }\nvoid loop(){\n  Serial.println(digitalRead(2));\n  delay(300);\n}",
+FC="void setup(){ Serial.begin(9600); }\nvoid loop(){\n  float volts = analogRead(A0) * 5.0 / 1024;\n  Serial.println(volts * 100); // formula depends on the sensor\n  delay(300);\n}",
+UC="void setup(){ Serial.begin(9600); pinMode(9,OUTPUT); pinMode(10,INPUT); }\nvoid loop(){\n  digitalWrite(9,LOW); delayMicroseconds(2);\n  digitalWrite(9,HIGH); delayMicroseconds(10);\n  digitalWrite(9,LOW);\n  Serial.println(pulseIn(10,HIGH));\n  delay(300);\n}",
+HC="#include <DHT.h>\nDHT dht(4, DHT11);\nvoid setup(){ Serial.begin(9600); dht.begin(); }\nvoid loop(){\n  Serial.print(dht.readTemperature());\n  Serial.print(\" \");\n  Serial.println(dht.readHumidity());\n  delay(2000);\n}";
+var R=[
+["ldr","LDR (light sensor)","A",520,{cv:60,fl:960,wv:330},"Night-lights and street lamps."],
+["uv","UV sensor","A",30,{fl:360,lp:150},"Sunscreen reminders and UV index meters."],
+["flame","Flame sensor","A",990,{lp:300,wm:900},"Fire alarms and gas cookers."],
+["irobs","IR obstacle sensor","D",1,{cl:0,wv:0,cv:0},"Robots that avoid walls."],
+["irline","IR line tracker","D",0,{cv:1,cl:1},"Line-following robots."],
+["ultra","HC-SR04 (ultrasonic distance)","U",150,{cl:25,aw:380,wv:55,cv:12},"Parking sensors and robots that measure distance.","VCC to 5V, GND to GND, Trig to D9, Echo to D10",UC],
+["pir","PIR (motion sensor)","D",0,{wv:1,cl:1,wm:1},"Hallway lights and burglar alarms."],
+["soil","Soil moisture sensor","A",1000,{wa:380},"Smart plant pots and irrigation."],
+["wlevel","Water level sensor","A",0,{wa:560,tc:130},"Tank and aquarium monitors."],
+["rain","Rain drop sensor","A",1000,{wa:350,br:800,tc:900},"Car wipers and window closers."],
+["dht","DHT11 (temperature and humidity)","2",[24,45],{br:[28,86],wm:[34,null],wa:[null,72],lp:[31,null]},"Weather stations and greenhouses.","VCC to 5V, GND to GND, Signal to D4 (DHT library)",HC],
+["lm35","LM35 temperature sensor","F",24,{wm:33,lp:42,br:27},"Room thermometers and fridges."],
+["ntc","NTC thermistor","A",510,{wm:420,lp:300,br:470},"Kettles, 3D printers and battery packs."],
+["mq2","MQ-2 smoke and gas sensor","A",180,{sm:700,br:240,lp:230},"Smoke and gas leak alarms."],
+["mq3","MQ-3 alcohol sensor","A",120,{br:620,sm:260},"Breathalysers."],
+["mq135","MQ-135 air quality sensor","A",200,{br:420,sm:600,wa:215},"Air purifiers and indoor air monitors."],
+["mic","Sound sensor (analog microphone)","A",512,{cp:900,sk:560,tc:620},"Noise meters and voice-controlled gadgets."],
+["clap","Clap switch (digital sound sensor)","D",0,{cp:1},"Clap-on lights."],
+["piezo","Piezo vibration sensor","A",5,{sk:600,pr:300,cp:120,tc:200},"Electronic drum pads and knock detectors."],
+["sw420","SW-420 vibration switch","D",0,{sk:1,pr:1},"Car alarms and earthquake alerts."],
+["tilt","Tilt switch","D",0,{tl:1,sk:1},"Pinball tilt penalties and rollover alarms."],
+["adxl","Accelerometer (analog)","A",512,{tl:700,sk:640},"Phone screen rotation and step counters."],
+["fsr","Force sensor (FSR)","A",0,{pr:800,tc:150},"Smart insoles and pressure pads."],
+["flex","Flex sensor","A",300,{bd:700,pr:420},"Game gloves and robot fingers."],
+["pot","Potentiometer","A",512,{tn:900},"Volume knobs and dimmers."],
+["ttp","Touch sensor (TTP223)","D",0,{tc:1,wa:1,pr:1},"Touch lamps and elevator buttons."],
+["btn","Push button","D",1,{pr:0,tc:0},"Doorbells and keyboards."],
+["reed","Reed switch","D",1,{mg:0,sk:0},"Door and window alarms."],
+["hall","Hall sensor (analog)","A",512,{mg:880},"Speedometers and current meters."],
+["halld","Hall sensor (digital)","D",1,{mg:0},"Brushless motors and wheel counters."],
+["compass","Magnetometer (compass)","A",400,{mg:800,tl:470,tn:600},"Phone compasses and drones."],
+["jstick","Joystick","A",512,{tn:880,pr:60},"Game controllers and drone remotes."],
+["capsoil","Capacitive soil moisture sensor","A",720,{wa:380,tc:600,br:690},"Long-lasting garden monitors."],
+["ph","pH sensor","A",520,{wa:450,tc:610},"Pools and fish tanks."],
+["turb","Turbidity sensor","A",900,{wa:420,sk:650},"Washing machines and water quality checks."],
+["pulse","Heartbeat sensor","A",500,{tc:720,wm:590},"Fitness bands and smart watches."],
+["gsr","Skin conductance sensor","A",300,{tc:640,wa:900},"Stress and lie-detector experiments."],
+["ldrd","Light switch module (digital)","D",1,{cv:0,wv:0},"Dusk-to-dawn garden lights."],
+["photo","Photo interrupter","D",0,{wv:1,cl:1,pr:1},"Printers and speed counters."],
+["capprox","Capacitive proximity sensor","D",0,{cl:1,tc:1,wa:1},"Touchless taps and liquid level switches."],
+["indprox","Inductive proximity sensor","D",1,{cl:0},"Factory machines that detect metal."],
+["baro","Barometric pressure sensor","A",600,{pr:700,br:620},"Weather stations and altitude meters."],
+["humid","Humidity sensor (analog)","A",400,{br:900,wa:700,wm:380},"Bathroom fans and museums."],
+["irtherm","Infrared thermometer","F",24,{wm:34,lp:41,cl:30,tc:33},"Contact-free fever checks."],
+["tmp36","TMP36 temperature sensor","F",24,{wm:32,lp:40,tc:31},"Thermostats and science fairs."],
+["soiltemp","Waterproof temperature probe","F",18,{wa:15,wm:24,tc:26},"Soil, pool and cooking thermometers."],
+["slm","Sound level meter","A",100,{cp:880,tc:200},"Classroom noise monitors."],
+["leak","Leak detector","D",0,{wa:1},"Under-sink and washing machine alarms."],
+["colour","Colour sensor (clear channel)","A",400,{fl:900,cv:30,wv:250,lp:700},"Sorting machines and screen calibration."],
+["dust","Dust sensor","A",100,{sm:600,br:300,sk:200},"Air purifiers and pollution maps."]
+];
+var TY={A:["Analog: a whole range of values.","Its readings cover a wide range of numbers."],D:["Digital: only 0 or 1.","It only ever shows two different values."],F:["Analog voltage turned into degrees with a formula. Check the datasheet for your module.","Its readings have decimals."],"2":["Two values per line, updated slowly.","Every line has two numbers and updates slowly."],U:["The numbers are echo time in microseconds. Divide by 58 for centimetres.","The numbers are big and grow when something moves away."]};
+var S={};
+R.forEach(function(r){var t=r[2],b=Array.isArray(r[3])?{x:r[3][0],y:r[3][1]}:{x:r[3]},e={},n=0;
+for(var k in r[4]){n++;var v=r[4][k];if(Array.isArray(v)){e[k]={};if(v[0]!=null)e[k].x=v[0];if(v[1]!=null)e[k].y=v[1]}else e[k]={x:v}}
+S[r[0]]={name:r[1],ms:t=="2"?2000:300,snap:t=="D",hold:t=="D"?3000:2500,base:b,eff:e,use:r[5],note:TY[t][0],
+pins:r[6]||(t=="D"?"VCC to 5V, GND to GND, signal pin to D2":"VCC to 5V, GND to GND, signal pin to A0"),
+hints:[TY[t][1]+" It reacts to "+n+" of the "+A.length+" actions.","Clue, it is used in: "+r[5]],
+code:r[7]||(t=="D"?DC:t=="F"?FC:AC),
+fmt:function(c){var x;
+if(t=="D"){x=Math.round(c.x);return[x,""+x]}
+if(t=="F"){x=c.x+Math.random()*.4-.2;return[x,x.toFixed(1)]}
+if(t=="U"){x=Math.round(c.x*58+Math.random()*40-20);return[x,""+x]}
+if(t=="2")return[Math.round(c.x),Math.round(c.x)+" "+Math.round(c.y)];
+x=Math.max(0,Math.round(c.x+Math.random()*10-5));return[x,""+x]}}});
+var grid=document.getElementById("grid"),scEl=document.getElementById("score"),timers=[],total=0,round=0,TD={};
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function build(){
+timers.forEach(clearInterval);timers=[];TD={};round++;scEl.textContent=total;grid.innerHTML="";
+var keys=Object.keys(S),order=shuf(keys).slice(0,5),names=keys.slice().sort(function(a,b){return S[a].name<S[b].name?-1:1});
+order.forEach(function(k,i){mk(k,"ABCDE"[i],names)})}
+function mk(k,L,names){TD[L]={sensor:k,solved:false,pts:0,wrong:[],hints:0};
+var s=S[k],cur=Object.assign({},s.base),tgt=Object.assign({},s.base),tm=null,ev={},hist=[],seen={},lines=[],wr=0,hn=0,done=false,n=0;
+var el=document.createElement("section");el.className="box";
+el.innerHTML='<h2>Box '+L+'<span class="tag"></span></h2><div class="lab">Poke the box:</div><div class="tools">'+A.map(function(a){return'<button class="n0" data-a="'+a[0]+'">'+a[1]+'</button>'}).join("")+'</div><div class="lab">Serial Monitor and plotter</div><pre class="mon">Serial Monitor (9600 baud)\n</pre><canvas width="600" height="64"></canvas><div class="rec">Different readings seen: <b class="cnt">0</b> Lowest: <b class="mn">–</b> Highest: <b class="mx">–</b></div><div class="row"><select aria-label="Guess for box '+L+'"><option value="">Your guess…</option>'+names.map(function(o){return'<option value="'+o+'">'+S[o].name+'</option>'}).join("")+'</select><button class="pri gu">Submit guess</button><button class="hi">Hint (−5)</button></div><div class="msg"></div><div class="rv"></div>';
+grid.appendChild(el);
+var $=function(q){return el.querySelector(q)},mon=$(".mon"),cv=$("canvas"),msg=$(".msg"),mn=null,mx=null;
+el.querySelectorAll("[data-a]").forEach(function(b){b.addEventListener("click",function(){
+var a=b.dataset.a,e=s.eff[a];
+if(!e){if(!ev[a]){ev[a]=1;b.className="n1";b.textContent=b.textContent+": no change"}return}
+var key=Object.keys(e)[0],up=e[key]>s.base[key];ev[a]=2;b.className="n2";
+if(b.textContent.indexOf(":")<0)b.textContent=b.textContent+(up?" ↑":" ↓");
+Object.assign(tgt,e);clearTimeout(tm);
+tm=setTimeout(function(){Object.assign(tgt,s.base)},s.hold||2500)})});
+function draw(){var c=cv.getContext("2d"),w=cv.width,h=cv.height;c.clearRect(0,0,w,h);if(hist.length<2)return;
+var lo=Math.min.apply(null,hist),hi=Math.max.apply(null,hist);if(hi-lo<2){lo-=1;hi+=1}
+c.strokeStyle="#8df0c6";c.lineWidth=2;c.beginPath();
+hist.forEach(function(v,i){var x=i/(49)*w,y=h-6-(v-lo)/(hi-lo)*(h-12);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke()}
+function tick(){
+for(var q in cur)cur[q]=s.snap?tgt[q]:cur[q]+(tgt[q]-cur[q])*.35;
+n++;if(n%(s.ms/100))return;
+var r=s.fmt(cur);lines.push(r[1]);if(lines.length>40)lines.shift();
+mon.textContent="Serial Monitor (9600 baud)\n"+lines.join("\n");mon.scrollTop=mon.scrollHeight;
+hist.push(r[0]);if(hist.length>50)hist.shift();
+if(mn===null||r[0]<mn)mn=r[0];if(mx===null||r[0]>mx)mx=r[0];
+seen[r[1]]=1;$(".cnt").textContent=Math.min(Object.keys(seen).length,99);$(".mn").textContent=mn;$(".mx").textContent=mx;draw()}
+timers.push(setInterval(tick,100));
+function reveal(pts){done=true;el.classList.add("won");
+$(".rv").innerHTML='<div class="reveal">This is the <b>'+s.name+'</b>.<br><b>Wiring:</b> '+s.pins+'<br><b>Real-life use:</b> '+s.use+'<br><b>What to notice:</b> '+s.note+'<pre>'+esc(s.code)+'</pre></div>';
+$(".tag").textContent=pts+" pts"}
+$(".hi").addEventListener("click",function(){if(done)return;if(hn>=2){msg.innerHTML='<span class="bad">No more hints for this box.</span>';return}
+msg.textContent="Hint: "+s.hints[hn];hn++;TD[L].hints=hn;sync()});
+$(".gu").addEventListener("click",function(){if(done)return;var g=$("select").value;if(!g){msg.innerHTML='<span class="bad">Pick a sensor first.</span>';return}
+if(g===k){var p=Math.max(5,30-10*wr-5*hn);total+=p;scEl.textContent=total;TD[L].solved=true;TD[L].pts=p;sync();msg.innerHTML='<span class="ok">Correct! +'+p+' points.</span>';reveal(p)}
+else{wr++;TD[L].wrong.push(S[g].name);if(wr>=3)TD[L].failed=true;sync();if(wr>=3){msg.innerHTML='<span class="bad">Three wrong guesses. Here is the answer, 0 points.</span>';reveal(0)}
+else msg.innerHTML='<span class="bad">Not it. '+(3-wr)+' guess'+(wr===2?"":"es")+' left. Check your evidence.</span>'}})}
+document.getElementById("again").addEventListener("click",build);
+var isT=false,uid=null,dbR=null,teamRef=null,started=false,teamName="",members="";
+var setupEl=document.getElementById("setup"),dashEl=document.getElementById("dash"),tabsEl=document.getElementById("tabs");
+setupEl.innerHTML='<div class="box setup"><h2>Join the investigation</h2><p class="lead" id="net"></p><label>Team name<input id="tn" maxlength="30"></label><label>Team members<input id="tm" maxlength="80" placeholder="Names, separated by commas"></label><button class="pri" id="go">Start investigating</button></div>';
+var netEl=document.getElementById("net");
+function sync(){if(!started)return;if(!teamRef&&dbR&&uid)teamRef=dbR.collection("teams").doc(uid);if(!teamRef)return;
+try{teamRef.set({name:teamName,members:members,score:total,round:round,boxes:TD,updated:Date.now()}).then(null,function(){netEl.textContent="Could not share your scores. Tell your teacher."})}catch(e){}}
+document.getElementById("go").addEventListener("click",function(){var n=document.getElementById("tn").value.trim();if(!n){document.getElementById("tn").focus();return}
+teamName=(isT?"[Test] ":"")+n;members=document.getElementById("tm").value.trim();started=true;total=0;round=0;document.getElementById("tl").textContent=(isT?"Test: ":"Team ")+n;
+view("p");build();sync()});
+function view(v){dashEl.hidden=v!=="d";setupEl.hidden=!(v==="p"&&!started);grid.hidden=!(v==="p"&&started);
+tabsEl.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.dataset.v===v)})}
+function dash(){tabsEl.innerHTML='<button data-v="d">Class dashboard</button><button data-v="p">Play a test round</button>';
+tabsEl.querySelectorAll("button").forEach(function(b){b.addEventListener("click",function(){view(b.dataset.v)})});view(location.hash==="#teacher"?"d":"p");
+dbR.collection("teams").onSnapshot(function(s){
+var t=s.docs.map(function(d){var x=d.data();x.id=d.id;return x}).sort(function(a,b){return(b.score||0)-(a.score||0)});
+var h='<p class="lead">Teams appear here as they start. Share this page with Contributor access so each group can join. <button id="clr">Remove all teams</button></p>';
+if(!t.length)h+='<div class="box">No teams yet. Waiting for the first group to start.</div>';
+t.forEach(function(x){var bx=x.boxes||{},ks=Object.keys(bx).sort(),sv=ks.filter(function(q){return bx[q].solved}).length;
+h+='<details class="box"><summary><b>'+esc(String(x.name||"?"))+'</b> '+esc(String(x.members||""))+' — <b>'+(+x.score||0)+' pts</b>, '+sv+'/'+ks.length+' solved, round '+(+x.round||1)+' <button data-id="'+encodeURIComponent(x.id)+'">Remove</button></summary><table><tr><th>Box</th><th>Real sensor</th><th>Result</th><th>Wrong guesses</th><th>Hints</th></tr>';
+ks.forEach(function(q){var b=bx[q],r=b.solved?"Solved +"+(+b.pts||0):b.failed?"Gave up":"Working";
+h+='<tr><td>'+q+'</td><td>'+esc((S[b.sensor]||{name:"?"}).name)+'</td><td>'+r+'</td><td>'+esc((b.wrong||[]).join("; ")||"–")+'</td><td>'+(+b.hints||0)+'</td></tr>'});
+h+='</table></details>'});
+var open={};dashEl.querySelectorAll("details").forEach(function(d,i){open[i]=d.open});
+dashEl.innerHTML=h;dashEl.querySelectorAll("details").forEach(function(d,i){d.open=!!open[i]});
+dashEl.querySelectorAll("[data-id]").forEach(function(b){b.addEventListener("click",function(e){e.preventDefault();dbR.doc("teams/"+decodeURIComponent(b.dataset.id)).delete()})});
+var c=document.getElementById("clr");if(c)c.addEventListener("click",function(){if(confirm("Remove all teams?"))t.forEach(function(x){dbR.doc("teams/"+x.id).delete()})})
+},function(){dashEl.textContent="Could not load teams."})}
+(async function(){try{var c=window.claude,u=c&&await c.use("user");if(u){isT=!!((await u.canEdit())||(await u.isOwner()));uid=await u.id()}dbR=c&&await c.use("db")}catch(e){}
+netEl.textContent=isT?"You are the teacher. A test round is saved on the dashboard as a [Test] team, so you can check that it works.":(dbR&&uid?"Connected: your guesses and score are shared with your teacher.":"Playing offline. Your score stays on this screen and is not sent to anyone.");
+if(isT&&dbR)dash()})();
+view("p");
+</script>
+</body>
+</html>
